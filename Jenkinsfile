@@ -2,16 +2,15 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "java-demo"
-        REGISTRY = "<YOUR-Docker-Registry>"  // Replace with your Docker registry, e.g., docker.io/username
-        K8S_CLUSTER = "<K8S-Cluster-Name>"
-        K8S_NAMESPACE = "default"  // Adjust namespace if necessary
+        DOCKER_IMAGE = "thrisha24/javaapp"
+        DOCKER_IMAGE_VERSION = "v${BUILD_NUMBER}"
+        MANIFEST_FILE = "${WORKSPACE}/deployment.yaml"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/your-repository/demo.git'  // Replace with your repo
+                git credentialsId: 'jenkins_thirsha', url: 'https://github.com/Gowthams1999-commits/Gowtham-Javaapp-Hellow.git'  // Replace with your repo
             }
         }
 
@@ -34,26 +33,48 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    sh 'docker build -t $REGISTRY/$DOCKER_IMAGE:latest .'
+                    sh 'docker build --network host -t ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION} .'
                 }
             }
         }
 
-        stage('Docker Push') {
+        stage('Docker Login') {
             steps {
                 script {
-                    sh 'docker push $REGISTRY/$DOCKER_IMAGE:latest'
+                    withCredentials([usernamePassword(credentialsId: 'docker_repo', passwordVariable: 'docker_pass', usernameVariable: 'docker_user')]) {
+                        sh 'echo ${docker_pass} | docker login -u ${docker_user} --password-stdin'
+                    }
                 }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Image Push to Docker Hub') {
             steps {
                 script {
-                    sh """
-                    kubectl set image deployment/java-demo-deployment java-demo=$REGISTRY/$DOCKER_IMAGE:latest --namespace=$K8S_NAMESPACE
-                    kubectl rollout status deployment/java-demo-deployment --namespace=$K8S_NAMESPACE
-                    """
+                    sh 'docker push ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION}'
+                }
+            }
+        }
+
+        stage('Update the image in deployment manifest') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'git_token_gow', variable: 'git_token_gow')]) {
+                        // Use 'sed' to update the image version in the deployment.yaml file
+                        sh """
+                        sed 's|image: .*|image: ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION}|g' ${MANIFEST_FILE} > temp_manifest.yaml
+                        mv temp_manifest.yaml ${MANIFEST_FILE}
+                        """
+
+                        // Configure git and commit changes
+                        sh '''
+                        git config --global user.name "Gowthams1999-commits"
+                        git config --global user.email "githubgowtham1999@gmail.com"
+                        git add .
+                        git commit -m "Update image version in deployment.yaml"
+                        git push https://${git_token_gow}@github.com/Gowthams1999-commits/Gowtham-Javaapp-Hellow.git HEAD:master
+                        '''
+                    }
                 }
             }
         }
