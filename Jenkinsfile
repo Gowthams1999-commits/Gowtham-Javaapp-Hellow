@@ -59,7 +59,7 @@ pipeline {
         stage('Update the image in deployment manifest') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'git_token', variable: 'git_token')]) {
+                    withCredentials([string(credentialsId: 'git_token', variable: 'git_token')]) {
                         // Use 'sed' to update the image version in the deployment.yaml file
                         sh """
                         sed 's|image: .*|image: ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION}|g' ${MANIFEST_FILE} > temp_manifest.yaml
