@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE = "thrisha24/javaapp"
         DOCKER_IMAGE_VERSION = "v${BUILD_NUMBER}"
-        MANIFEST_FILE = "${WORKSPACE}/deployment.yaml"
+        MANIFEST_FILE = "${WORKSPACE}/k8_manifest/deployment.yaml"
     }
 
     stages {
