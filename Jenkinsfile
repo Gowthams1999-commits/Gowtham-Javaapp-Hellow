@@ -59,7 +59,7 @@ pipeline {
         stage('Update the image in deployment manifest') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'git_token_gow', variable: 'git_token_gow')]) {
+                    withCredentials([file(credentialsId: 'git_token', variable: 'git_token')]) {
                         // Use 'sed' to update the image version in the deployment.yaml file
                         sh """
                         sed 's|image: .*|image: ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION}|g' ${MANIFEST_FILE} > temp_manifest.yaml
@@ -72,7 +72,7 @@ pipeline {
                         git config --global user.email "githubgowtham1999@gmail.com"
                         git add .
                         git commit -m "Update image version in deployment.yaml"
-                        git push https://${git_token_gow}@github.com/Gowthams1999-commits/Gowtham-Javaapp-Hellow.git HEAD:master
+                        git push https://${git_token}@github.com/Gowthams1999-commits/Gowtham-Javaapp-Hellow.git HEAD:master
                         '''
                     }
                 }
